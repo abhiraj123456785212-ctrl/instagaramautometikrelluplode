@@ -18,7 +18,7 @@ app = Client("short_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 user_data = {}
 
 # ================= AUTO DELETE =================
-async def auto_delete(file, delay=600):  # 10 minutes
+async def auto_delete(file, delay=600):
     await asyncio.sleep(delay)
     if os.path.exists(file):
         try:
@@ -41,7 +41,6 @@ async def get_link(client, message):
 
     url = message.text.strip()
 
-    # ❌ Spam / invalid text ignore
     if not ("youtube.com" in url or "youtu.be" in url):
         return
 
@@ -114,7 +113,7 @@ async def quality_selected(client, callback_query):
     except:
         return await callback_query.message.edit("❌ Download failed")
 
-    # ✅ Auto delete original after 10 min
+    # auto delete original
     asyncio.create_task(auto_delete("video.mp4", 600))
 
     await callback_query.message.edit("✂️ Creating Shorts...")
@@ -141,9 +140,15 @@ async def quality_selected(client, callback_query):
     part = 1
 
     while start < duration:
+
+        # last part fix
+        remaining = duration - start
+        clip_time = 60 if remaining > 60 else remaining
+
         output = f"part{part}.mp4"
 
-        cmd = f'ffmpeg -i video.mp4 -ss {start} -t 60 -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920" -y {output}'
+        # ✅ NO CUT VERSION (FULL VIDEO)
+        cmd = f'ffmpeg -i video.mp4 -ss {start} -t {clip_time} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -y {output}'
         subprocess.call(cmd, shell=True)
 
         try:
